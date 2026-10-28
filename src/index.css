@@ -1,0 +1,254 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #252820;
+  background: #F7F5EF;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+
+  --font-heading: 'Manrope', sans-serif;
+
+  /* Shared Cravely palette */
+  --cream: #F7F5EF;
+  --white: #FFFFFF;
+  --forest: #263C2E;
+  --forest-hover: #1D3024;
+  --sage: #DCE7D9;
+  --olive: #687B4D;
+  --terracotta: #C65E38;
+  --terracotta-hover: #A84929;
+
+  --text: #252820;
+  --muted: #697064;
+  --line: #E5E4DA;
+  --surface: #FFFFFF;
+
+  --success: #28734F;
+  --success-bg: #E8F4EC;
+  --warning: #91631C;
+  --warning-bg: #FFF3DA;
+  --danger: #B34343;
+  --danger-bg: #FCECEC;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  --shadow-card: 0 4px 18px rgba(37, 40, 32, 0.045);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid #D6A48E;
+  outline-offset: 3px;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Theme scopes */
+
+.manager-theme {
+  --theme-primary: var(--forest);
+  --theme-primary-hover: var(--forest-hover);
+  --theme-accent: var(--olive);
+  --theme-background: #F4F5F0;
+  --theme-surface: #FFFFFF;
+  --theme-text: #252D26;
+  --theme-muted: #6C766C;
+  --theme-border: #E0E5DD;
+  color: var(--theme-text);
+  background: var(--theme-background);
+  min-height: 100vh;
+}
+
+.customer-theme {
+  --theme-primary: var(--forest);
+  --theme-primary-hover: var(--forest-hover);
+  --theme-accent: var(--terracotta);
+  --theme-background: var(--cream);
+  --theme-surface: #FFFFFF;
+  --theme-text: #252820;
+  --theme-muted: #77776F;
+  --theme-border: #E9E5DC;
+  color: var(--theme-text);
+  background: var(--theme-background);
+  min-height: 100vh;
+}
+
+/* Shared reusable components */
+
+.cravely-container {
+  width: min(100% - 48px, 1320px);
+  margin-inline: auto;
+}
+
+.cravely-card {
+  background: var(--theme-surface, var(--surface));
+  border: 1px solid var(--theme-border, var(--line));
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+
+.cravely-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 15px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.cravely-button-primary {
+  color: #FFFFFF;
+  background: var(--theme-primary, var(--forest));
+  border-color: var(--theme-primary, var(--forest));
+}
+
+.cravely-button-primary:hover {
+  background: var(--theme-primary-hover, var(--forest-hover));
+}
+
+.cravely-button-secondary {
+  color: var(--theme-text, var(--text));
+  background: var(--theme-surface, var(--white));
+  border-color: var(--theme-border, var(--line));
+}
+
+.cravely-button-secondary:hover {
+  background: var(--theme-background, var(--cream));
+}
+
+.cravely-input,
+.cravely-select,
+.cravely-textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  color: var(--theme-text, var(--text));
+  background: var(--theme-surface, var(--white));
+  border: 1px solid var(--theme-border, var(--line));
+  border-radius: var(--radius-sm);
+}
+
+.cravely-input:focus,
+.cravely-select:focus,
+.cravely-textarea:focus {
+  border-color: var(--theme-accent, var(--olive));
+}
+
+.cravely-muted {
+  color: var(--theme-muted, var(--muted));
+  line-height: 1.6;
+}
+
+.cravely-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cravely-status-success {
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.cravely-status-warning {
+  color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.cravely-status-danger {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* Responsive foundations */
+
+@media (max-width: 640px) {
+  .cravely-container {
+    width: min(100% - 30px, 1320px);
+  }
+
+  .cravely-button {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
