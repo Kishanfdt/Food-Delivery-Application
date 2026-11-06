@@ -1,368 +1,99 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ShoppingBag,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Search,
+  RefreshCw,
+  Utensils,
+  CreditCard,
+  User,
+} from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import ManagerLayout from "../components/ManagerLayout";
 
 const ORDER_STATUSES = [
-    "pending",
-    "confirmed",
-    "preparing",
-    "ready",
-    "completed",
-    "cancelled",
-    "rejected",
+  "pending",
+  "confirmed",
+  "preparing",
+  "ready",
+  "completed",
+  "cancelled",
+  "rejected",
 ];
 
 const FINAL_STATUSES = ["completed", "cancelled", "rejected"];
 
-const C = {
-    bg: "#F4F5F0",
-    surface: "#FFFFFF",
-    forest: "#263C2E",
-    forestHover: "#1D3024",
-    text: "#252820",
-    muted: "#697064",
-    line: "#E5E4DA",
-    green: "#387A55",
-    greenLight: "#E5F2E8",
-    amber: "#95601F",
-    amberLight: "#F8EFDF",
-    blue: "#315E86",
-    blueLight: "#E8EFF7",
-    purple: "#76519B",
-    purpleLight: "#F0EAF7",
-    red: "#B94B42",
-    redLight: "#FCEDEA",
-};
-
-const styles = {
-    page: {
-        minHeight: "100vh",
-        background: C.bg,
-        color: C.text,
-        padding: "32px 24px",
-        fontFamily: "'DM Sans', sans-serif",
-        boxSizing: "border-box",
-    },
-    container: {
-        maxWidth: 1240,
-        margin: "0 auto",
-    },
-    header: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 20,
-        marginBottom: 28,
-    },
-    eyebrow: {
-        margin: "0 0 8px",
-        fontSize: 12,
-        fontWeight: 800,
-        color: C.green,
-        letterSpacing: 1.6,
-        textTransform: "uppercase",
-    },
-    title: {
-        margin: "0 0 8px",
-        fontFamily: "Manrope, sans-serif",
-        fontSize: "clamp(28px, 4vw, 36px)",
-        fontWeight: 800,
-        letterSpacing: "-1px",
-        color: C.forest,
-    },
-    subtitle: {
-        margin: 0,
-        color: C.muted,
-        fontSize: 14,
-        lineHeight: 1.6,
-    },
-    primaryButton: {
-        padding: "12px 18px",
-        border: `1px solid ${C.forest}`,
-        borderRadius: 10,
-        background: C.forest,
-        color: "#FFFFFF",
-        fontWeight: 700,
-        fontSize: 13,
-        cursor: "pointer",
-        transition: "background 0.2s ease",
-    },
-    secondaryButton: {
-        padding: "10px 14px",
-        border: `1px solid ${C.line}`,
-        borderRadius: 9,
-        background: C.surface,
-        color: C.forest,
-        fontWeight: 700,
-        fontSize: 13,
-        cursor: "pointer",
-    },
-    summaryGrid: {
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(165px, 1fr))",
-        gap: 14,
-        marginBottom: 22,
-    },
-    summaryCard: {
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 14,
-        padding: "20px",
-        minWidth: 0,
-        boxSizing: "border-box",
-    },
-    summaryLabel: {
-        fontSize: 12,
-        color: C.muted,
-        fontWeight: 700,
-        marginBottom: 12,
-    },
-    summaryValue: {
-        fontSize: 28,
-        fontWeight: 800,
-        color: C.forest,
-        letterSpacing: "-0.7px",
-    },
-    summaryNote: {
-        fontSize: 11,
-        color: C.muted,
-        marginTop: 8,
-    },
-    filterPanel: {
-        display: "flex",
-        alignItems: "flex-end",
-        flexWrap: "wrap",
-        gap: 14,
-        background: C.surface,
-        padding: "18px",
-        border: `1px solid ${C.line}`,
-        borderRadius: 14,
-        marginBottom: 22,
-    },
-    fieldLabel: {
-        display: "block",
-        marginBottom: 8,
-        fontSize: 12,
-        fontWeight: 700,
-        color: C.muted,
-    },
-    select: {
-        padding: "11px 12px",
-        border: `1px solid ${C.line}`,
-        borderRadius: 9,
-        background: "#FFFFFF",
-        color: C.text,
-        fontSize: 13,
-        fontFamily: "inherit",
-        outlineColor: C.green,
-        minHeight: 42,
-    },
-    countPill: {
-        background: "#E8EEE4",
-        color: C.forest,
-        padding: "11px 14px",
-        borderRadius: 9,
-        fontSize: 12,
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-    },
-    card: {
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 16,
-        padding: 24,
-        marginBottom: 18,
-        boxShadow: "0 4px 18px rgba(38, 60, 46, 0.035)",
-        minWidth: 0,
-        boxSizing: "border-box",
-    },
-    cardHeader: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        flexWrap: "wrap",
-        gap: 20,
-        paddingBottom: 20,
-        borderBottom: `1px solid ${C.line}`,
-    },
-    orderTitle: {
-        margin: "0 0 10px",
-        fontSize: 20,
-        fontWeight: 800,
-        color: C.forest,
-        overflowWrap: "anywhere",
-    },
-    metadata: {
-        display: "grid",
-        gap: 9,
-        marginTop: 16,
-        fontSize: 13,
-        color: C.muted,
-        lineHeight: 1.5,
-        overflowWrap: "anywhere",
-    },
-    statusControl: {
-        width: 240,
-        maxWidth: "100%",
-    },
-    sectionTitle: {
-        margin: "0 0 14px",
-        fontSize: 15,
-        fontWeight: 800,
-        color: C.forest,
-    },
-    itemsSection: {
-        paddingTop: 22,
-    },
-    itemRow: {
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-        gap: 16,
-        padding: "15px 0",
-        borderBottom: `1px solid ${C.line}`,
-        fontSize: 13,
-    },
-    itemName: {
-        fontWeight: 700,
-        color: C.text,
-        marginBottom: 6,
-    },
-    muted: {
-        color: C.muted,
-        fontSize: 12,
-        lineHeight: 1.6,
-    },
-    total: {
-        display: "flex",
-        justifyContent: "space-between",
-        gap: 12,
-        paddingTop: 20,
-        fontSize: 16,
-        fontWeight: 800,
-        color: C.forest,
-    },
-    alert: {
-        padding: "14px 16px",
-        borderRadius: 11,
-        marginBottom: 18,
-        fontSize: 13,
-        lineHeight: 1.6,
-    },
-    empty: {
-        background: C.surface,
-        border: `1px solid ${C.line}`,
-        borderRadius: 16,
-        padding: "48px 20px",
-        textAlign: "center",
-        color: C.muted,
-    },
-};
-
 function label(value) {
-    if (!value) return "Unknown";
-
-    return String(value)
-        .replaceAll("_", " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+  if (!value) return "Unknown";
+  return String(value)
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatDate(value) {
-    if (!value) return "Date unavailable";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) return "Date unavailable";
-
-    return date.toLocaleString("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    });
+  if (!value) return "Date unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  return date.toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 function formatPrice(value) {
-    return new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(Number(value) || 0);
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value) || 0);
 }
 
-function getStatusStyle(status) {
-    const normalized = String(status || "pending").toLowerCase();
-
-    const palette = {
-        pending: [C.amberLight, C.amber],
-        confirmed: [C.blueLight, C.blue],
-        preparing: [C.purpleLight, C.purple],
-        ready: [C.greenLight, C.green],
-        completed: [C.greenLight, C.green],
-        cancelled: [C.redLight, C.red],
-        rejected: [C.redLight, C.red],
-    };
-
-    const [background, color] = palette[normalized] || [
-        "#ECEFE9",
-        C.muted,
-    ];
-
-    return {
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "7px 11px",
-        borderRadius: 30,
-        fontSize: 11,
-        fontWeight: 800,
-        whiteSpace: "nowrap",
-        background,
-        color,
-    };
-}
-
-function SummaryCard({ title, value, note, color }) {
-    return (
-        <section style={styles.summaryCard}>
-            <div style={styles.summaryLabel}>{title}</div>
-            <div style={{ ...styles.summaryValue, color: color || C.forest }}>
-                {value}
-            </div>
-            <div style={styles.summaryNote}>{note}</div>
-        </section>
-    );
-}
-
-function StatusBadge({ status }) {
-    return (
-        <span style={getStatusStyle(status)}>
-            {label(status)}
-        </span>
-    );
+function getStatusBadgeStyle(status) {
+  const norm = String(status || "pending").toLowerCase();
+  if (["completed", "delivered", "served"].includes(norm)) {
+    return { bg: "#DCFCE7", color: "#166534", border: "#BBF7D0" };
+  }
+  if (["cancelled", "rejected"].includes(norm)) {
+    return { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" };
+  }
+  if (["preparing"].includes(norm)) {
+    return { bg: "#F3E8FF", color: "#6B21A8", border: "#E9D5FF" };
+  }
+  if (["ready"].includes(norm)) {
+    return { bg: "#DBEAFE", color: "#1E40AF", border: "#BFDBFE" };
+  }
+  if (["confirmed"].includes(norm)) {
+    return { bg: "#E0F2FE", color: "#0369A1", border: "#BAE6FD" };
+  }
+  return { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" };
 }
 
 export default function Orders() {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-    const [updatingId, setUpdatingId] = useState(null);
-    const [error, setError] = useState("");
-    const [notice, setNotice] = useState("");
-    const [filter, setFilter] = useState("all");
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
-    const loadOrders = useCallback(async (silent = false) => {
-        if (silent) {
-            setRefreshing(true);
-        } else {
-            setLoading(true);
-        }
+  const loadOrders = useCallback(async (silent = false) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError("");
 
-        setError("");
-
-        try {
-            const { data, error: ordersError } = await supabase
-                .from("orders")
-                .select(`
+    try {
+      const { data, error: ordersError } = await supabase
+        .from("orders")
+        .select(`
           id,
           order_type,
           status,
@@ -378,444 +109,656 @@ export default function Orders() {
             line_total
           )
         `)
-                .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
-            if (ordersError) throw ordersError;
+      if (ordersError) throw ordersError;
+      setOrders(data || []);
+    } catch (err) {
+      setError(err.message || "Unable to load orders.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-            setOrders(data || []);
-        } catch (err) {
-            setError(err.message || "Unable to load orders.");
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, []);
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
 
-    useEffect(() => {
-        loadOrders();
-    }, [loadOrders]);
-
-    async function updateStatus(orderId, nextStatus) {
-        const order = orders.find(
-            (item) => String(item.id) === String(orderId)
-        );
-
-        if (!order || order.status === nextStatus || updatingId !== null) {
-            return;
-        }
-
-        if (FINAL_STATUSES.includes(String(order.status).toLowerCase())) {
-            setError("This order is already in a final status.");
-            return;
-        }
-
-        const isTerminalUpdate = ["cancelled", "rejected"].includes(nextStatus);
-
-        const confirmed = window.confirm(
-            isTerminalUpdate
-                ? `Are you sure you want to ${nextStatus} order #${orderId}? Stock restoration will be handled by the database.`
-                : `Change order #${orderId} to ${label(nextStatus)}?`
-        );
-
-        if (!confirmed) return;
-
-        setUpdatingId(orderId);
-        setError("");
-        setNotice("");
-
-        try {
-            const { data, error: updateError } = await supabase.rpc(
-                "manage_order_status",
-                {
-                    p_order_id: orderId,
-                    p_next_status: nextStatus,
-                }
-            );
-
-            if (updateError) throw updateError;
-
-            if (!data || data.order_id == null || !data.status) {
-                throw new Error(
-                    "The database did not confirm the order status update."
-                );
-            }
-
-            await loadOrders(true);
-
-            setNotice(
-                `Order #${orderId} updated to ${label(data.status)}.${isTerminalUpdate
-                    ? " Stock restoration was handled by the database."
-                    : ""
-                }`
-            );
-        } catch (err) {
-            setError(err.message || "Unable to update order status.");
-        } finally {
-            setUpdatingId(null);
-        }
+  async function updateStatus(orderId, nextStatus) {
+    const order = orders.find((item) => String(item.id) === String(orderId));
+    if (!order || order.status === nextStatus || updatingId !== null) {
+      return;
     }
 
-    const visibleOrders = useMemo(
-        () =>
-            filter === "all"
-                ? orders
-                : orders.filter(
-                    (order) =>
-                        String(order.status || "").toLowerCase() === filter
-                ),
-        [orders, filter]
-    );
-
-    const summary = useMemo(
-        () => ({
-            total: orders.length,
-            pending: orders.filter(
-                (order) =>
-                    !FINAL_STATUSES.includes(
-                        String(order.status || "").toLowerCase()
-                    )
-            ).length,
-            completed: orders.filter(
-                (order) =>
-                    String(order.status || "").toLowerCase() === "completed"
-            ).length,
-            cancelled: orders.filter((order) =>
-                ["cancelled", "rejected"].includes(
-                    String(order.status || "").toLowerCase()
-                )
-            ).length,
-        }),
-        [orders]
-    );
-
-    if (loading) {
-        return (
-            <main style={styles.page}>
-                <div style={styles.container}>
-                    <div style={styles.empty}>
-                        <p style={{ fontSize: 17, fontWeight: 800, color: C.forest }}>
-                            Loading orders…
-                        </p>
-                        <p style={styles.muted}>
-                            Fetching the latest restaurant orders.
-                        </p>
-                    </div>
-                </div>
-            </main>
-        );
+    if (FINAL_STATUSES.includes(String(order.status).toLowerCase())) {
+      setError("This order is already in a final status.");
+      return;
     }
 
-    return (
-        <main style={styles.page}>
-            <div style={styles.container}>
-                <header style={styles.header}>
-                    <div>
-                        <p style={styles.eyebrow}>Cravely · Manager workspace</p>
-                        <h1 style={styles.title}>Order management</h1>
-                        <p style={styles.subtitle}>
-                            Review customer orders and manage their progress.
-                        </p>
-                    </div>
+    const isTerminalUpdate = ["cancelled", "rejected"].includes(nextStatus);
+    const confirmed = window.confirm(
+      isTerminalUpdate
+        ? `Are you sure you want to ${nextStatus} order #${orderId}? Portions will be restored to inventory automatically.`
+        : `Change order #${orderId} to ${label(nextStatus)}?`
+    );
 
-                    <button
-                        type="button"
-                        onClick={() => loadOrders(true)}
-                        disabled={refreshing}
-                        style={{
-                            ...styles.primaryButton,
-                            opacity: refreshing ? 0.65 : 1,
-                            cursor: refreshing ? "wait" : "pointer",
-                        }}
-                    >
-                        {refreshing ? "Refreshing…" : "↻ Refresh orders"}
-                    </button>
-                </header>
+    if (!confirmed) return;
 
-                {error && (
-                    <div
-                        role="alert"
-                        style={{
-                            ...styles.alert,
-                            border: "1px solid #F0C9C4",
-                            background: C.redLight,
-                            color: C.red,
-                        }}
-                    >
-                        <strong>Something went wrong</strong>
-                        <div>{error}</div>
-                        <button
-                            type="button"
-                            onClick={() => loadOrders(true)}
-                            style={{
-                                ...styles.secondaryButton,
-                                marginTop: 10,
-                            }}
-                        >
-                            Try again
-                        </button>
-                    </div>
-                )}
+    setUpdatingId(orderId);
+    setError("");
+    setNotice("");
 
-                {notice && (
-                    <div
-                        role="status"
-                        style={{
-                            ...styles.alert,
-                            border: "1px solid #C8E0CC",
-                            background: C.greenLight,
-                            color: C.green,
-                        }}
-                    >
-                        {notice}
-                        <button
-                            type="button"
-                            onClick={() => setNotice("")}
-                            aria-label="Dismiss notification"
-                            style={{
-                                float: "right",
-                                border: 0,
-                                background: "transparent",
-                                color: "inherit",
-                                cursor: "pointer",
-                                fontSize: 18,
-                            }}
-                        >
-                            ×
-                        </button>
-                    </div>
-                )}
+    try {
+      const { data, error: updateError } = await supabase.rpc(
+        "manage_order_status",
+        {
+          p_order_id: orderId,
+          p_next_status: nextStatus,
+        }
+      );
 
-                <div style={styles.summaryGrid}>
-                    <SummaryCard
-                        title="All orders"
-                        value={summary.total}
-                        note="Total recorded orders"
-                    />
-                    <SummaryCard
-                        title="In progress"
-                        value={summary.pending}
-                        note="Not yet in a final status"
-                        color={C.amber}
-                    />
-                    <SummaryCard
-                        title="Completed"
-                        value={summary.completed}
-                        note="Successfully completed"
-                        color={C.green}
-                    />
-                    <SummaryCard
-                        title="Cancelled / rejected"
-                        value={summary.cancelled}
-                        note="Orders not proceeding"
-                        color={C.red}
-                    />
-                </div>
+      if (updateError) throw updateError;
 
-                <section style={styles.filterPanel}>
-                    <div style={{ flex: 1, minWidth: 180 }}>
-                        <label htmlFor="order-status-filter" style={styles.fieldLabel}>
-                            Filter by status
-                        </label>
+      if (!data || data.order_id == null || !data.status) {
+        throw new Error(
+          "The database did not confirm the order status update."
+        );
+      }
 
-                        <select
-                            id="order-status-filter"
-                            value={filter}
-                            onChange={(event) => setFilter(event.target.value)}
-                            style={{ ...styles.select, width: "100%" }}
-                        >
-                            <option value="all">All orders</option>
-                            {ORDER_STATUSES.map((status) => (
-                                <option key={status} value={status}>
-                                    {label(status)}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+      await loadOrders(true);
+      setNotice(
+        `Order #${orderId} updated to ${label(data.status)}.${
+          isTerminalUpdate
+            ? " Inventory portions were restored automatically."
+            : ""
+        }`
+      );
+    } catch (err) {
+      setError(err.message || "Unable to update order status.");
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
-                    <div style={styles.countPill}>
-                        {visibleOrders.length}{" "}
-                        {visibleOrders.length === 1 ? "order" : "orders"}
-                    </div>
-                </section>
+  const summary = useMemo(() => {
+    return {
+      total: orders.length,
+      pending: orders.filter(
+        (o) => !FINAL_STATUSES.includes(String(o.status || "").toLowerCase())
+      ).length,
+      completed: orders.filter(
+        (o) => String(o.status || "").toLowerCase() === "completed"
+      ).length,
+      cancelled: orders.filter((o) =>
+        ["cancelled", "rejected"].includes(String(o.status || "").toLowerCase())
+      ).length,
+    };
+  }, [orders]);
 
-                {visibleOrders.length === 0 ? (
-                    <div style={styles.empty}>
-                        <div style={{ fontSize: 32, marginBottom: 12 }}>▤</div>
-                        <h2
-                            style={{
-                                color: C.forest,
-                                margin: "0 0 8px",
-                                fontSize: 20,
-                            }}
-                        >
-                            No orders found
-                        </h2>
-                        <p style={styles.muted}>
-                            {filter === "all"
-                                ? "Customer orders will appear here when they are placed."
-                                : `There are currently no ${label(filter).toLowerCase()} orders.`}
-                        </p>
+  const visibleOrders = useMemo(() => {
+    let result = orders;
 
-                        {filter !== "all" && (
-                            <button
-                                type="button"
-                                onClick={() => setFilter("all")}
-                                style={{ ...styles.primaryButton, marginTop: 12 }}
-                            >
-                                View all orders
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    visibleOrders.map((order) => {
-                        const normalizedStatus = String(
-                            order.status || "pending"
-                        ).toLowerCase();
+    if (filter !== "all") {
+      result = result.filter(
+        (order) => String(order.status || "").toLowerCase() === filter
+      );
+    }
 
-                        const isFinal = FINAL_STATUSES.includes(normalizedStatus);
-                        const isUpdating = String(updatingId) === String(order.id);
+    const term = search.trim().toLowerCase();
+    if (term) {
+      result = result.filter(
+        (order) =>
+          String(order.id).toLowerCase().includes(term) ||
+          String(order.customer_id || "").toLowerCase().includes(term) ||
+          (order.order_items || []).some((item) =>
+            String(item.item_name || "").toLowerCase().includes(term)
+          )
+      );
+    }
 
-                        return (
-                            <article key={order.id} style={styles.card}>
-                                <div style={styles.cardHeader}>
-                                    <div style={{ flex: 1, minWidth: 220 }}>
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                flexWrap: "wrap",
-                                                gap: 10,
-                                                marginBottom: 8,
-                                            }}
-                                        >
-                                            <h2 style={styles.orderTitle}>
-                                                Order #{order.id}
-                                            </h2>
-                                            <StatusBadge status={order.status} />
-                                        </div>
+    return result;
+  }, [orders, filter, search]);
 
-                                        <p style={styles.subtitle}>
-                                            Placed on {formatDate(order.created_at)}
-                                        </p>
+  const filterTabs = [
+    { id: "all", label: "All Orders", count: summary.total },
+    {
+      id: "pending",
+      label: "Pending",
+      count: orders.filter((o) => o.status === "pending").length,
+    },
+    {
+      id: "preparing",
+      label: "Preparing",
+      count: orders.filter((o) => o.status === "preparing").length,
+    },
+    {
+      id: "ready",
+      label: "Ready",
+      count: orders.filter((o) => o.status === "ready").length,
+    },
+    { id: "completed", label: "Completed", count: summary.completed },
+    { id: "cancelled", label: "Cancelled", count: summary.cancelled },
+  ];
 
-                                        <div style={styles.metadata}>
-                                            <p style={{ margin: 0 }}>
-                                                <strong>Order type:</strong>{" "}
-                                                {label(order.order_type)}
-                                            </p>
-                                            <p style={{ margin: 0 }}>
-                                                <strong>Payment:</strong>{" "}
-                                                {label(order.payment_status)}
-                                            </p>
-                                            <p style={{ margin: 0 }}>
-                                                <strong>Customer ID:</strong>{" "}
-                                                {order.customer_id || "—"}
-                                            </p>
-                                        </div>
-                                    </div>
+  return (
+    <ManagerLayout
+      title="Kitchen Orders & Fulfillment"
+      subtitle="Track customer orders in real-time, adjust kitchen preparation stages, and monitor payments."
+      onRefresh={() => loadOrders(true)}
+      refreshing={refreshing}
+      actions={
+        <button
+          type="button"
+          className="manager-btn-primary"
+          onClick={() => loadOrders(true)}
+          disabled={refreshing}
+        >
+          <RefreshCw size={15} className={refreshing ? "spin-animation" : ""} />
+          <span>{refreshing ? "Refreshing..." : "Refresh Orders"}</span>
+        </button>
+      }
+    >
+      {/* Notifications */}
+      {error && (
+        <div
+          style={{
+            background: "#FEE2E2",
+            border: "1px solid #FCA5A5",
+            color: "#991B1B",
+            borderRadius: "12px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <AlertCircle size={20} />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setError("")}
+            style={{
+              background: "transparent",
+              border: 0,
+              color: "#991B1B",
+              fontSize: "18px",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-                                    <div style={styles.statusControl}>
-                                        <label
-                                            htmlFor={`status-${order.id}`}
-                                            style={styles.fieldLabel}
-                                        >
-                                            Update order status
-                                        </label>
+      {notice && (
+        <div
+          style={{
+            background: "#DCFCE7",
+            border: "1px solid #86EFAC",
+            color: "#166534",
+            borderRadius: "12px",
+            padding: "16px 20px",
+            marginBottom: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <CheckCircle2 size={20} />
+            <span>{notice}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotice("")}
+            style={{
+              background: "transparent",
+              border: 0,
+              color: "#166534",
+              fontSize: "18px",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
-                                        <select
-                                            id={`status-${order.id}`}
-                                            value={normalizedStatus}
-                                            onChange={(event) =>
-                                                updateStatus(order.id, event.target.value)
-                                            }
-                                            disabled={isUpdating || isFinal}
-                                            style={{
-                                                ...styles.select,
-                                                width: "100%",
-                                                boxSizing: "border-box",
-                                                background: isFinal ? "#F1F3EF" : "#FFFFFF",
-                                                cursor: isFinal ? "not-allowed" : "pointer",
-                                            }}
-                                        >
-                                            {ORDER_STATUSES.map((status) => (
-                                                <option key={status} value={status}>
-                                                    {label(status)}
-                                                </option>
-                                            ))}
-                                        </select>
+      {/* KPI Stats Grid */}
+      <div className="manager-kpi-grid">
+        <div className="manager-kpi-card">
+          <div className="manager-kpi-header">
+            <span className="manager-kpi-title">Total Orders</span>
+            <span className="manager-kpi-icon icon-forest">
+              <ShoppingBag size={18} />
+            </span>
+          </div>
+          <div className="manager-kpi-value">{summary.total}</div>
+          <div className="manager-kpi-footer">
+            <span>All recorded customer requests</span>
+          </div>
+        </div>
 
-                                        {isUpdating && (
-                                            <p style={{ ...styles.muted, marginTop: 8 }}>
-                                                Updating order…
-                                            </p>
-                                        )}
+        <div className="manager-kpi-card">
+          <div className="manager-kpi-header">
+            <span className="manager-kpi-title">Active Orders</span>
+            <span className="manager-kpi-icon icon-amber">
+              <Clock size={18} />
+            </span>
+          </div>
+          <div className="manager-kpi-value" style={{ color: "#B45309" }}>
+            {summary.pending}
+          </div>
+          <div className="manager-kpi-footer">
+            <span style={{ color: "#B45309", fontWeight: 700 }}>
+              Needs kitchen fulfillment
+            </span>
+          </div>
+        </div>
 
-                                        {isFinal && (
-                                            <p style={{ ...styles.muted, marginTop: 8 }}>
-                                                This order has reached a final status.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
+        <div className="manager-kpi-card">
+          <div className="manager-kpi-header">
+            <span className="manager-kpi-title">Fulfilled</span>
+            <span className="manager-kpi-icon icon-green">
+              <CheckCircle2 size={18} />
+            </span>
+          </div>
+          <div className="manager-kpi-value" style={{ color: "#15803D" }}>
+            {summary.completed}
+          </div>
+          <div className="manager-kpi-footer">
+            <span>Successfully served or delivered</span>
+          </div>
+        </div>
 
-                                <div style={styles.itemsSection}>
-                                    <h3 style={styles.sectionTitle}>Ordered items</h3>
+        <div className="manager-kpi-card">
+          <div className="manager-kpi-header">
+            <span className="manager-kpi-title">Cancelled</span>
+            <span className="manager-kpi-icon icon-red">
+              <XCircle size={18} />
+            </span>
+          </div>
+          <div className="manager-kpi-value" style={{ color: "#B91C1C" }}>
+            {summary.cancelled}
+          </div>
+          <div className="manager-kpi-footer">
+            <span>Restored to kitchen inventory</span>
+          </div>
+        </div>
+      </div>
 
-                                    {order.order_items?.length ? (
-                                        order.order_items.map((item) => (
-                                            <div key={item.id} style={styles.itemRow}>
-                                                <div
-                                                    style={{
-                                                        minWidth: 0,
-                                                        overflowWrap: "anywhere",
-                                                    }}
-                                                >
-                                                    <div style={styles.itemName}>
-                                                        {item.item_name || "Food item"}
-                                                    </div>
-                                                    <div style={styles.muted}>
-                                                        {formatPrice(item.unit_price)} × {item.quantity}
-                                                    </div>
-                                                </div>
-
-                                                <div
-                                                    style={{
-                                                        fontWeight: 800,
-                                                        color: C.forest,
-                                                        whiteSpace: "nowrap",
-                                                    }}
-                                                >
-                                                    {formatPrice(item.line_total)}
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p style={styles.muted}>
-                                            No item details are available for this order.
-                                        </p>
-                                    )}
-
-                                    <div style={styles.total}>
-                                        <span>Order total</span>
-                                        <span>{formatPrice(order.subtotal)}</span>
-                                    </div>
-                                </div>
-                            </article>
-                        );
-                    })
-                )}
-
-                <footer
-                    style={{
-                        padding: "22px 0 8px",
-                        textAlign: "center",
-                        color: "#92998F",
-                        fontSize: 11,
-                    }}
+      {/* Filter and Search Bar */}
+      <div
+        className="manager-card"
+        style={{
+          padding: "16px 20px",
+          marginBottom: "24px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "14px",
+          }}
+        >
+          {/* Quick status pill tabs */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+            }}
+          >
+            {filterTabs.map((tab) => {
+              const active = filter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilter(tab.id)}
+                  style={{
+                    padding: "7px 13px",
+                    borderRadius: "999px",
+                    border: active ? "1px solid #263C2E" : "1px solid #E5E4DA",
+                    background: active ? "#263C2E" : "#ffffff",
+                    color: active ? "#ffffff" : "#4A5244",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    transition: "all 0.15s ease",
+                  }}
                 >
-                    Cravely · Manager workspace
-                </footer>
-            </div>
-        </main>
-    );
+                  <span>{tab.label}</span>
+                  <span
+                    style={{
+                      background: active
+                        ? "rgba(255, 255, 255, 0.25)"
+                        : "#F0F2EB",
+                      color: active ? "#ffffff" : "#697064",
+                      padding: "1px 6px",
+                      borderRadius: "10px",
+                      fontSize: "10.5px",
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search box */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "#F4F5F0",
+              border: "1px solid #E5E4DA",
+              borderRadius: "10px",
+              padding: "7px 12px",
+              minWidth: "220px",
+            }}
+          >
+            <Search size={16} color="#697064" />
+            <input
+              placeholder="Search by ID, customer, item..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                background: "transparent",
+                border: 0,
+                outline: "none",
+                fontSize: "12.5px",
+                width: "100%",
+                color: "#263C2E",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Orders List */}
+      {loading ? (
+        <div
+          className="manager-card"
+          style={{ textAlign: "center", padding: "48px 20px", color: "#697064" }}
+        >
+          Loading orders...
+        </div>
+      ) : visibleOrders.length === 0 ? (
+        <div
+          className="manager-card"
+          style={{
+            textAlign: "center",
+            padding: "54px 20px",
+            color: "#697064",
+          }}
+        >
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              margin: "0 auto 12px",
+              borderRadius: "12px",
+              background: "#EAF1E7",
+              color: "#263C2E",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <ShoppingBag size={24} />
+          </div>
+          <h3
+            style={{
+              margin: "0 0 6px",
+              fontSize: "17px",
+              fontWeight: 800,
+              color: "#263C2E",
+            }}
+          >
+            No orders found
+          </h3>
+          <p style={{ margin: 0, fontSize: "13px" }}>
+            {filter !== "all" || search
+              ? "Try adjusting your filter or search query."
+              : "Customer orders will appear here automatically when placed."}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          {visibleOrders.map((order) => {
+            const normalizedStatus = String(order.status || "pending").toLowerCase();
+            const isFinal = FINAL_STATUSES.includes(normalizedStatus);
+            const isUpdating = String(updatingId) === String(order.id);
+            const statusStyle = getStatusBadgeStyle(order.status);
+
+            return (
+              <article key={order.id} className="manager-card">
+                {/* Header row */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    flexWrap: "wrap",
+                    gap: "16px",
+                    paddingBottom: "18px",
+                    borderBottom: "1px solid #F0F2EB",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: "240px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        flexWrap: "wrap",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <h2
+                        style={{
+                          margin: 0,
+                          fontSize: "19px",
+                          fontWeight: 800,
+                          color: "#263C2E",
+                        }}
+                      >
+                        Order #{String(order.id).slice(0, 8).toUpperCase()}
+                      </h2>
+                      <span
+                        style={{
+                          display: "inline-block",
+                          padding: "4px 10px",
+                          borderRadius: "999px",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                          background: statusStyle.bg,
+                          color: statusStyle.color,
+                          border: `1px solid ${statusStyle.border}`,
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {label(order.status)}
+                      </span>
+                    </div>
+
+                    <p style={{ margin: "0 0 10px", fontSize: "12.5px", color: "#697064" }}>
+                      Placed on {formatDate(order.created_at)}
+                    </p>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "16px",
+                        flexWrap: "wrap",
+                        fontSize: "12px",
+                        color: "#4A5244",
+                      }}
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <Utensils size={13} color="#687B4D" />
+                        <strong>Type:</strong> {label(order.order_type)}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <CreditCard size={13} color="#687B4D" />
+                        <strong>Payment:</strong> {label(order.payment_status)}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                        <User size={13} color="#687B4D" />
+                        <strong>Customer:</strong> {order.customer_id ? String(order.customer_id).slice(0, 8) : "Guest"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Status changer */}
+                  <div style={{ width: "220px", maxWidth: "100%" }}>
+                    <label
+                      htmlFor={`status-${order.id}`}
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontSize: "11.5px",
+                        fontWeight: 700,
+                        color: "#697064",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Kitchen Status
+                    </label>
+
+                    <select
+                      id={`status-${order.id}`}
+                      value={normalizedStatus}
+                      onChange={(e) => updateStatus(order.id, e.target.value)}
+                      disabled={isUpdating || isFinal}
+                      style={{
+                        width: "100%",
+                        padding: "9px 12px",
+                        borderRadius: "9px",
+                        border: "1px solid #D5DCD0",
+                        background: isFinal ? "#F4F5F0" : "#ffffff",
+                        color: "#263C2E",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        cursor: isFinal ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      {ORDER_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {label(status)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {isUpdating && (
+                      <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#387A55" }}>
+                        Updating status...
+                      </p>
+                    )}
+
+                    {isFinal && (
+                      <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#697064" }}>
+                        This order has reached its final state.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Items Breakdown */}
+                <div style={{ paddingTop: "16px" }}>
+                  <h4
+                    style={{
+                      margin: "0 0 10px",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      color: "#263C2E",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    Items Ordered
+                  </h4>
+
+                  {order.order_items?.length ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {order.order_items.map((item) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: "13px",
+                            padding: "6px 0",
+                            borderBottom: "1px dashed #F0F2EB",
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: 700, color: "#263C2E" }}>
+                              {item.item_name || "Food Item"}
+                            </span>
+                            <span style={{ color: "#697064", marginLeft: "8px", fontSize: "12px" }}>
+                              × {item.quantity} ({formatPrice(item.unit_price)})
+                            </span>
+                          </div>
+                          <span style={{ fontWeight: 700, color: "#263C2E" }}>
+                            {formatPrice(item.line_total)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, fontSize: "12.5px", color: "#697064" }}>
+                      No item details available.
+                    </p>
+                  )}
+
+                  {/* Subtotal */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: "14px",
+                      paddingTop: "12px",
+                      borderTop: "1px solid #E5E4DA",
+                    }}
+                  >
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#263C2E" }}>
+                      Order Total
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "17px",
+                        fontWeight: 800,
+                        color: "#263C2E",
+                      }}
+                    >
+                      {formatPrice(order.subtotal)}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </ManagerLayout>
+  );
 }
