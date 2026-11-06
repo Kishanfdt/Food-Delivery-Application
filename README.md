@@ -5,14 +5,16 @@
 ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20Database-3ECF8E?logo=supabase&logoColor=white)
 ![React Router](https://img.shields.io/badge/React%20Router-v7-CA4245?logo=reactrouter&logoColor=white)
 
-**Cravely** is a full-stack food delivery and restaurant operations application designed to streamline online ordering for customers while giving restaurant managers real-time oversight of kitchen orders, menus, analytics, and customer support.
+**Cravely** is a full-stack food delivery and restaurant operations application designed to streamline online ordering for customers while giving restaurant managers real-time oversight of kitchen orders, menus, analytics, scheduled meal services, and dynamic Happy Hours promotions.
 
 ---
 
 ## Table of Contents
 - [Overview](#overview)
+- [Recent Updates & Enhancements](#recent-updates--enhancements)
 - [How It Works](#how-it-works)
 - [Key Features](#key-features)
+  - [Happy Hours Discount Engine](#happy-hours-discount-engine)
   - [Customer Experience](#customer-experience)
   - [Manager Operations Suite](#manager-operations-suite)
   - [Authentication & Role Management](#authentication--role-management)
@@ -31,10 +33,43 @@
 
 ## Overview
 
-Cravely bridges the gap between hungry customers and restaurant managers through a unified, role-aware platform. 
+Cravely bridges the gap between hungry customers and restaurant managers through a unified, role-aware platform designed with a warm, modern aesthetic:
+- **Forest Green** (`#263C2E`)
+- **Terracotta Accent** (`#C65E38`)
+- **Warm Cream** (`#F7F5EF`)
+- **Sage Neutral** (`#DCE7D9`)
 
-- **Customers** enjoy a responsive catalog to discover dishes, filter by categories, manage an active cart, place orders, track delivery milestones, and submit customer service tickets.
-- **Managers** get a complete restaurant management back-office featuring live order tracking, category and dish availability controls, business dashboard analytics, and customer ticket resolution.
+- **Customers** enjoy a responsive catalog to discover dishes, filter by categories and active meal times (Breakfast, Lunch, Dinner), view live Happy Hours discounts, manage an active cart, place takeaway/delivery orders, and track support tickets.
+- **Managers** get a complete restaurant management back-office featuring live kitchen order tracking, dish stock controls, an executive business dashboard, dynamic Happy Hours toggle and scheduling controls, and support ticket resolution.
+
+---
+
+## Recent Updates & Enhancements
+
+### 1. ⚡ Live Happy Hours Discount System
+- **Manager Control Modal (`HappyHourControlModal.jsx`)**:
+  - Instant Master Toggle to enable/disable Happy Hours storewide.
+  - Discount presets (`10%`, `15%`, `20%`, `25%`, `30%`, `50%`) plus custom percentage input.
+  - Optional IST time window schedule (e.g., 4:00 PM – 7:00 PM IST) with daily auto-activation.
+  - Customizable promotional banner title and description.
+  - Real-time customer dish preview showing original vs. discounted pricing.
+- **Cross-Tab & Realtime Sync (`happyHourService.js`)**:
+  - Zero-lag synchronization across browser tabs and devices using a resilient dual-layer engine (`BroadcastChannel` + `localStorage` + DOM CustomEvents + Supabase Realtime).
+- **Customer Experience**:
+  - Topbar indicator and promotional banner when Happy Hours is active.
+  - Dish cards display `-XX%` badge with strike-through original prices (`~~₹200~~`) and highlighted discounted prices (`₹160`).
+  - Cart breakdowns clearly itemize regular subtotal and Happy Hours discount savings before checkout.
+
+### 2. 🎨 Unified UI/UX & Layout Architecture
+- Standardized `ManagerLayout` and `CustomerLayout` wrapper shells with persistent top headers, responsive sidebars, breadcrumbs, live status pills, and mobile drawer navigation.
+- Real-time IST Meal Period Synchronization: automatically filters dishes and displays hours for **Breakfast (6:00 AM – 11:00 AM)**, **Lunch (11:00 AM – 4:00 PM)**, and **Dinner (6:00 PM – 11:00 PM)**.
+- Live inventory stock monitoring with warning badges for items with low stock quantities.
+
+### 3. 🔐 Modernized Authentication Experience (`AuthPanel.jsx`)
+- Premium split-screen layout with ambient glow and brand showcase highlights.
+- Segmented role switcher for **Customer Login** vs. **Manager Portal**.
+- Quick demo login pills (`manager` and `customer`) for fast one-click testing.
+- Password visibility toggle (`Eye` / `EyeOff`) and active session management view.
 
 ---
 
@@ -43,84 +78,89 @@ Cravely bridges the gap between hungry customers and restaurant managers through
 ```mermaid
 flowchart TD
     User([User visits Cravely]) --> Auth{Authenticated?}
-    Auth -- No --> Login[Login / Sign Up]
+    Auth -- No --> Login[Split-Screen Login / Sign Up]
     Auth -- Yes --> RoleCheck{User Role in 'profiles'}
     
-    RoleCheck -- role: 'customer' --> CustHome[Customer Home]
-    CustHome --> Browse[Browse Menu & Filter Categories]
-    Browse --> Cart[Add to Cart & Checkout]
-    Cart --> OrderPlaced[(Save Order to Supabase)]
-    CustHome --> MyOrders[View My Orders & Status]
-    CustHome --> CustTickets[Raise Support Tickets]
+    RoleCheck -- role: 'customer' --> CustHome[Customer Experience]
+    CustHome --> MealTime[Check Active Meal Period: Breakfast / Lunch / Dinner]
+    MealTime --> HappyHourCheck{Happy Hours Active?}
+    HappyHourCheck -- Yes --> HHDiscount[Apply Dynamic % Discount to Menu & Cart]
+    HappyHourCheck -- No --> RegularMenu[Regular Menu Pricing]
+    HHDiscount --> Cart[Add to Cart & Select Takeaway / Delivery]
+    RegularMenu --> Cart
+    Cart --> OrderPlaced[(Save Order & Deduct Inventory via RPC)]
+    CustHome --> MyOrders[View My Orders & Track Delivery]
+    CustHome --> CustTickets[Submit Support Tickets]
 
     RoleCheck -- role: 'manager' --> MgrHome[Manager Central Hub]
-    MgrHome --> Dashboard[Analytics & Sales Dashboard]
-    MgrHome --> OrdersMgr[Live Kitchen Order Management]
-    MgrHome --> CatMgr[Categories & Item Availability]
-    MgrHome --> TicketMgr[Review & Resolve Support Tickets]
+    MgrHome --> Dashboard[Executive Sales & Performance Analytics]
+    MgrHome --> HHModal[Configure & Toggle Happy Hours]
+    MgrHome --> OrdersMgr[Live Kitchen Order Pipeline]
+    MgrHome --> CatMgr[Category & Stock Management]
+    MgrHome --> TicketMgr[Review & Resolve Tickets]
 ```
-
-1. **Authentication & Role Resolution**: Users authenticate via email and password using Supabase Auth. Upon login, Cravely queries the user's role (`customer` or `manager`) from the `profiles` table and routes them to their dedicated workspace.
-2. **Catalog & Cart Pipeline**: Food categories and available dishes are dynamically queried from Supabase. The interactive cart calculates items, quantities, and sub-totals in real-time.
-3. **Order Lifecycle**: When a customer confirms an order, it is persisted to Supabase with an initial status of `pending`. Restaurant managers receive and advance the status (`pending` → `preparing` → `ready` → `delivered`).
-4. **Customer Care & Ticketing**: Customers can file help tickets directly linked to their account. Managers can review tickets, take action, and resolve issues.
 
 ---
 
 ## Key Features
 
+### Happy Hours Discount Engine
+- **Manager Toggle**: One-click dashboard toggle switch to activate or deactivate happy hours instantly.
+- **Time Window Scheduler**: Option to automatically activate discounts during specified IST hours.
+- **Transparent Customer Billing**: Detailed cart itemization showing original subtotal, exact discount deductions, and net payable amount.
+
 ### Customer Experience
-- **Interactive Menu Catalog**: Browse categories (Starters, Main Course, Beverages, Desserts, etc.) with real-time dish pricing, preparation time, and availability flags.
-- **Live Search & Filter**: Instant filtering by keywords and culinary categories.
-- **Cart & Fast Checkout**: Slide-out cart to update quantities, view order totals, input delivery details, and place orders.
-- **Order History (`/my-orders`)**: Full historical log of placed orders, breakdown of items, and current delivery status.
-- **Customer Support (`/my-tickets`)**: Direct channel to raise questions, report missing items, or request assistance.
+- **Interactive Menu Catalog**: Browse categories with real-time dish pricing, preparation time, and availability flags.
+- **Scheduled Meal Filtering**: Displays dishes matching the current time of day (Breakfast, Lunch, Dinner).
+- **Cart & Fast Checkout**: Takeaway vs. delivery selector, quantity controls, and instant order placement.
+- **Order History (`/my-orders`)**: Historical log of orders, itemized receipts, and order statuses.
+- **Support Tickets (`/my-tickets`)**: Direct channel to raise inquiries or report delivery issues.
 
 ### Manager Operations Suite
-- **Manager Hub (`/manager`)**: Central launchpad providing quick navigation across operational tools.
-- **Performance Dashboard (`/dashboard`)**: Key performance indicators, daily order counts, revenue summaries, and restaurant health metrics.
-- **Order Pipeline (`/orders`)**: Real-time kanban/list view of kitchen tickets to advance order states from preparation to dispatch.
-- **Menu Management (`/categories`)**: Toggle dish availability on the fly (e.g., mark sold-out items) and update category structures.
-- **Support Helpdesk (`/tickets`)**: Review open tickets submitted by customers, address queries, and update resolution statuses.
+- **Executive Dashboard (`/dashboard`)**: Sales summaries, recent orders, ticket counter, and quick Happy Hours switch.
+- **Kitchen Order Pipeline (`/orders`)**: Advance order states from received to preparing, ready, and delivered.
+- **Menu & Inventory Control (`/categories`)**: Update prices, edit categories, and adjust available quantities.
+- **Support Desk (`/tickets`)**: Review open tickets and resolve customer issues.
 
 ### Authentication & Role Management
-- Secure user session handling with token persistence and session recovery.
-- Route protection guards that prevent unauthorized access to manager endpoints.
-- Role fallback handling and logout safeguards.
+- Secure session management with token persistence and role-based route guards.
+- Automatic routing based on role (`/dashboard` for managers, `/customer` for diners).
+- Demo autofill shortcuts to switch between manager and customer workflows quickly.
 
 ---
 
 ## System Architecture
 
-- **Frontend**: Single Page Application built with **React 19** and bundled with **Vite 8** for ultra-fast Hot Module Replacement (HMR).
-- **Routing**: **React Router v7** managing client-side navigation, parameter extraction, and declarative role-based redirects.
-- **State Management**: React state hooks (`useState`, `useEffect`, `useMemo`) for responsive UI states and optimistic updates.
-- **Backend as a Service (BaaS)**: **Supabase** providing authentication, PostgreSQL relational database, Row Level Security (RLS), and REST/RPC APIs.
+- **Frontend**: Single Page Application built with **React 19** and bundled with **Vite 8**.
+- **Icons & Styling**: **Lucide React** paired with a unified CSS design system (`App.css`).
+- **Routing**: **React Router v7** managing client-side navigation and role guards.
+- **State & Synchronization**: React hooks paired with `BroadcastChannel` and Supabase Realtime.
+- **Backend as a Service (BaaS)**: **Supabase** providing PostgreSQL database, Row Level Security (RLS), and database RPCs (`create_order`, `manage_order_status`).
 
 ---
 
 ## Database Schema (Supabase)
 
-The core relational database model includes:
-
 | Table | Description | Key Fields |
 |---|---|---|
 | `profiles` | Extended user profile data | `id` (references auth.users), `role` (`customer` \| `manager`), `created_at` |
-| `food_categories` | Menu classification | `id`, `name`, `description`, `created_at` |
-| `food_items` | Individual menu items | `id`, `category_id`, `name`, `price`, `preparation_time`, `is_available` |
-| `orders` | Placed customer orders | `id`, `user_id`, `total_amount`, `status`, `delivery_address`, `created_at` |
-| `order_items` | Order line items | `id`, `order_id`, `food_item_id`, `quantity`, `price` |
+| `food_categories` | Menu classification and meal periods | `id`, `name`, `description`, `meal_period`, `created_at` |
+| `food_items` | Individual dishes and inventory stock | `id`, `category_id`, `name`, `price`, `available_quantity`, `is_available` |
+| `orders` | Customer orders | `id`, `user_id`, `subtotal`, `status`, `order_type`, `created_at` |
+| `order_items` | Individual line items per order | `id`, `order_id`, `food_item_id`, `quantity`, `unit_price`, `line_total` |
 | `tickets` | Customer service tickets | `id`, `user_id`, `subject`, `description`, `status`, `created_at` |
+| `store_settings` | Global store configurations (Happy Hours) | `key` (PK), `value` (JSONB), `updated_at` |
 
 ---
 
 ## Tech Stack
 
 - **UI & Framework**: React 19, JavaScript (ESModules)
+- **Icons**: Lucide React
 - **Tooling & Bundler**: Vite 8, Oxlint
 - **Routing**: React Router DOM 7
 - **Database & Auth**: `@supabase/supabase-js`
-- **Styling**: Tailored, modern CSS design system with micro-interactions and responsive flex/grid layouts.
+- **Styling**: Custom CSS design system with Forest Green (`#263C2E`) and Terracotta (`#C65E38`) themes.
 
 ---
 
@@ -153,7 +193,9 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-or-publishable-key
 ```
 
-> **Note**: Do not commit `.env.local` to source control. It is already included in `.gitignore`.
+### Database Setup
+
+Run the SQL migration script located in [`supabase_setup.sql`](supabase_setup.sql) inside your Supabase project's SQL Editor to initialize tables, RLS policies, and RPC stored procedures.
 
 ### Running the App
 
@@ -162,38 +204,41 @@ Start the development server:
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser to view the application.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
 ## Project Structure
 
 ```text
-├── index.html              # HTML entry point
-├── package.json            # Project dependencies and scripts
-├── vite.config.js          # Vite configuration
-├── .gitignore              # Ignored files (node_modules, .env*, dist)
-├── public/                 # Static assets (favicons, SVGs)
+├── index.html                       # HTML entry point
+├── package.json                     # Project dependencies and scripts
+├── vite.config.js                   # Vite configuration
+├── .gitignore                       # Ignored files (node_modules, .env*, dist, archives)
+├── supabase_setup.sql               # Database migration and seed SQL script
+├── public/                          # Static assets
 └── src/
-    ├── main.jsx            # Application root mounting
-    ├── App.jsx             # Route definitions & Role-based authentication guard
-    ├── App.css             # Main component styles & layout rules
-    ├── index.css           # Global CSS variables, resets, and typography
-    ├── assets/             # Brand logos and images
-    ├── components/         # Reusable UI components (AuthPanel, MenuList, etc.)
+    ├── main.jsx                     # Application root mounting
+    ├── App.jsx                      # Route definitions & Role-based authentication guard
+    ├── App.css                      # Unified design system styles
+    ├── components/
+    │   ├── AuthPanel.jsx            # Modern split-screen authentication
+    │   ├── CustomerLayout.jsx       # Standardized customer layout shell & topbar
+    │   ├── ManagerLayout.jsx        # Standardized manager operations layout shell
+    │   └── HappyHourControlModal.jsx# Manager Happy Hours configuration modal
     ├── lib/
-    │   ├── supabaseClient.js  # Supabase client initialization
-    │   └── menuApi.js         # Menu query helper functions
+    │   ├── supabaseClient.js        # Supabase client initialization
+    │   └── happyHourService.js      # Happy Hours state manager & cross-tab sync engine
     └── pages/
-        ├── LoginPage.jsx      # Customer & Manager authentication
-        ├── CustomerHome.jsx   # Menu browsing, cart, and order placement
-        ├── MyOrders.jsx       # Customer order history
-        ├── CustomerTickets.jsx# Customer ticket submission and status
-        ├── ManagerHome.jsx    # Central back-office navigation hub
-        ├── Dashboard.jsx      # Sales, metrics, and restaurant overview
-        ├── Categories.jsx     # Category and dish availability management
-        ├── Orders.jsx         # Live kitchen order status manager
-        └── ManagerTickets.jsx # Support ticket resolution desk
+        ├── LoginPage.jsx            # Customer & Manager authentication page
+        ├── CustomerHome.jsx         # Dining menu, Happy Hours banners, and cart checkout
+        ├── MyOrders.jsx             # Customer order history and status tracking
+        ├── CustomerTickets.jsx      # Customer support ticket filing
+        ├── ManagerHome.jsx          # Manager operations launchpad
+        ├── Dashboard.jsx            # Sales analytics, order metrics & Happy Hours toggle
+        ├── Categories.jsx           # Menu and category inventory manager
+        ├── Orders.jsx               # Kitchen order status pipeline
+        └── ManagerTickets.jsx       # Support ticket resolution desk
 ```
 
 ---
